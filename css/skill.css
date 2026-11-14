@@ -1,0 +1,98 @@
+/* Skill challenges (js/systems/skill.js). Loaded by the module itself. Sits beside the check card in scene.css. */
+
+.lfk-wrap { position: absolute; inset: 0; display: flex; justify-content: center; align-items: flex-start; padding-top: 12px; pointer-events: none !important; }
+.lfk-wrap.is-compact { align-items: center; padding-top: 0; }
+.lfk-wrap > .lfk { pointer-events: auto; }
+
+.lfk { --sc: var(--gold-2); --edge: rgba(247, 201, 92, 0.42); position: relative; width: 872px; padding: 16px 26px 14px; text-align: center; opacity: 0; transform: translateY(60px) scale(0.94);
+  transition: opacity 420ms var(--ease-out), transform 620ms var(--ease-back); box-shadow: var(--shadow-3), 0 0 60px color-mix(in srgb, var(--sc) 18%, transparent); }
+.lfk.is-compact { width: 690px; padding: 12px 24px 12px; }
+.lfk-wrap.is-in .lfk { opacity: 1; transform: none; }
+.lfk-wrap.is-out .lfk { opacity: 0; transform: translateY(-20px) scale(0.97); transition-duration: 320ms; }
+
+.lfk-kicker { display: flex; align-items: center; justify-content: center; gap: 10px; font-family: var(--font-display); font-weight: 700; font-size: 16px; letter-spacing: 0.3em; text-transform: uppercase; color: color-mix(in srgb, var(--sc) 70%, white 30%); }
+.lfk-gem { width: 12px; height: 12px; transform: rotate(45deg); background: var(--sc); box-shadow: 0 0 10px var(--sc); }
+.lfk-talent { height: 26px; font-size: 13px; color: var(--gold-1); letter-spacing: 0.1em; }
+.lfk-talent svg { width: 13px; height: 13px; }
+.lfk-title { margin: 6px 0 2px; font-family: var(--font-display); font-weight: 700; font-size: 30px; line-height: 1.15; color: var(--cream); text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6); }
+.is-compact .lfk-title { font-size: 24px; }
+.lfk-mercy { font-style: italic; font-size: 18px; color: var(--moon); }
+
+/* hero picker */
+.lfk-choose { margin: 10px 0 2px; font-style: italic; font-size: 21px; color: var(--cream-dim); }
+.lfk-herolist { display: flex; justify-content: center; gap: 14px; margin: 10px 0 8px; }
+.lfk-hero { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; width: 124px; min-height: 150px; padding: 14px 6px 10px; border-radius: 16px; border: 1px solid rgba(247, 201, 92, 0.25); background: rgba(13, 11, 20, 0.4); color: inherit; font: inherit; cursor: pointer;
+  transition: transform 300ms var(--ease-back), border-color 200ms, background 200ms, box-shadow 200ms; }
+.lfk-hero .lf-portrait { --size: 82px; }
+.lfk-hero:hover, .lfk-hero:focus-visible { border-color: rgba(255, 231, 163, 0.85); background: rgba(51, 41, 79, 0.55); transform: translateY(-4px); box-shadow: 0 0 24px rgba(247, 201, 92, 0.3); outline: none; }
+.lfk-hero.is-pressed { transform: scale(0.95); }
+.lfk-hero.is-sel { border-color: var(--gold-1); box-shadow: 0 0 0 1.5px var(--gold-2), 0 0 30px rgba(247, 201, 92, 0.45); }
+.lfk-hero-name { font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--cream); }
+.lfk-hero-bonus { font-family: var(--font-display); font-weight: 900; font-size: 22px; line-height: 1; color: color-mix(in srgb, var(--sc) 60%, white 40%); }
+.lfk-hero-talent { position: absolute; top: 8px; right: 12px; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #2b1905; background: var(--gold-grad); box-shadow: 0 0 10px rgba(247, 201, 92, 0.7); }
+.lfk-hero-talent svg { width: 14px; height: 14px; }
+.lfk .lf-spot-mark { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); white-space: nowrap; }
+
+.lfk-body { display: flex; flex-direction: column; align-items: center; }
+.lfk.is-choosing .lfk-body { display: none; }
+
+/* who: each */
+.lfk-eachrow { position: absolute; left: 12px; top: 10px; display: flex; gap: 8px; pointer-events: none; }
+.lfk-chip { position: relative; padding: 3px; border-radius: 50%; border: 2px solid rgba(247, 201, 92, 0.2); opacity: 0.55; transition: opacity 300ms, border-color 300ms, transform 300ms var(--ease-back); }
+.lfk-chip { background: rgba(7, 6, 12, 0.6); }
+.lfk-chip .lf-portrait { --size: 36px; }
+.lfk-chip.is-sel { opacity: 1; border-color: var(--gold-1); transform: scale(1.1); box-shadow: 0 0 16px rgba(247, 201, 92, 0.45); }
+.lfk-chip.is-pass { opacity: 1; border-color: var(--leaf); }
+.lfk-chip.is-fail { opacity: 0.85; border-color: rgba(255, 122, 138, 0.8); }
+.lfk-chip-res { position: absolute; right: -6px; bottom: -6px; width: 22px; height: 22px; }
+.lfk-chip-res svg { width: 22px; height: 22px; filter: drop-shadow(0 1px 2px #000); }
+.lfk-chip.is-pass .lfk-chip-res { color: var(--leaf); }
+.lfk-chip.is-fail .lfk-chip-res { color: var(--rose); }
+
+/* the hero who plays and what their bonus does */
+.lfk-badge { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 44px; margin: 4px 0 0; }
+.lfk-badge .lf-portrait { --size: 42px; }
+.lfk-badge-name { font-family: var(--font-display); font-weight: 700; font-size: 19px; color: var(--cream); }
+.lfk-badge-bonus { padding: 2px 10px; border-radius: var(--r-pill); font-family: var(--font-display); font-weight: 900; font-size: 18px; color: #1c1206; background: color-mix(in srgb, var(--sc) 75%, white 25%); box-shadow: 0 0 12px color-mix(in srgb, var(--sc) 60%, transparent); }
+.lfk-badge-talent { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #2b1905; background: var(--gold-grad); }
+.lfk-badge-talent svg { width: 13px; height: 13px; }
+.lfk-badge-help { font-style: italic; font-size: 19px; color: var(--gold-1); }
+.is-compact .lfk-badge { min-height: 36px; margin: 2px 0; }
+.is-compact .lfk-badge .lf-portrait { --size: 34px; }
+
+.lfk-how { margin: 2px 0 6px; font-family: var(--font-body); font-weight: 700; font-size: 24px; line-height: 1.2; color: var(--cream); text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7); }
+.is-compact .lfk-how { font-size: 20px; margin-bottom: 6px; }
+
+/* the play window */
+.lfk-play { position: relative; border-radius: 18px; overflow: hidden; border: var(--hair-strong); border-color: var(--edge); box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.6), 0 6px 18px rgba(0, 0, 0, 0.5); background: #0d0b14; }
+.lfk-play::after { content: ''; position: absolute; inset: 0; pointer-events: none; border-radius: inherit; box-shadow: inset 0 1px 0 rgba(255, 231, 163, 0.18); }
+.lfk-canvas { display: block; touch-action: none; cursor: pointer; -webkit-tap-highlight-color: transparent; user-select: none; }
+.kind-aim .lfk-canvas { cursor: crosshair; }
+.lfk-veil { position: absolute; inset: 0; pointer-events: none; opacity: 0; background: linear-gradient(180deg, rgba(13, 11, 20, 0) 60%, rgba(13, 11, 20, 0.35)); transition: opacity 300ms; }
+.lfk-veil.is-on { opacity: 1; }
+
+.lfk-keys { position: absolute; right: 12px; bottom: 8px; padding: 2px 10px; border-radius: 10px; background: rgba(7, 6, 12, 0.55); font-size: 18px; color: var(--cream-faint); pointer-events: none; }
+.is-compact .lfk-keys { display: none; }
+/* key hints only for keyboard and mouse players; after a touch the plain "tap" line says it all */
+:root[data-input="touch"] .lfk-keys, :root[data-input="touch"] .lf-keyhint { display: none; }
+/* memory: one free replay, top right of the play area, clear of the five lights */
+.lfk .lfk-replay { position: absolute; top: 10px; right: 12px; white-space: nowrap; min-height: 72px; min-width: 72px; padding: 0 22px; font-size: 22px; opacity: 0; pointer-events: none; transform: scale(0.9); transition: opacity 240ms, transform 240ms var(--ease-out); }
+.lfk .lfk-replay.is-on { opacity: 1; pointer-events: auto; transform: none; }
+
+/* footer: Ready? and the Star offer */
+.lfk-foot { min-height: 80px; overflow: hidden; max-height: 160px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; margin-top: 6px; opacity: 0; transform: translateY(8px); transition: opacity 300ms, transform 300ms var(--ease-out), min-height 360ms var(--ease-out), max-height 360ms var(--ease-out), margin 360ms; }
+.lfk-foot:not(.is-on) { min-height: 0; max-height: 0; margin-top: 0; }
+.lfk-foot.is-on { opacity: 1; transform: none; padding: 4px 12px; }
+.is-compact .lfk-foot.is-on { min-height: 76px; }
+.lfk .lfk-ready { min-width: 260px; min-height: 72px; font-size: 28px; letter-spacing: 0.08em; animation: lfk-ready 1.8s var(--ease-in-out) infinite; }
+@keyframes lfk-ready { 0%, 100% { box-shadow: 0 0 0 0 rgba(247, 201, 92, 0.0), var(--shadow-2); } 50% { box-shadow: 0 0 0 8px rgba(247, 201, 92, 0.18), 0 0 30px rgba(247, 201, 92, 0.45); } }
+.lfk-reroll-q { display: flex; align-items: center; gap: 8px; font-family: var(--font-display); font-weight: 700; font-size: 21px; color: var(--gold-1); }
+.lfk-reroll-q svg { width: 24px; height: 24px; }
+.lfk-reroll-btns { display: flex; gap: 14px; }
+.lfk-reroll-btns .lf-btn { min-height: 60px; }
+
+/* bold feel (Grimspire): cold steel edge, ember glow */
+.lfk.feel-bold { --edge: rgba(195, 205, 224, 0.5); box-shadow: var(--shadow-3), 0 0 60px rgba(255, 106, 42, 0.14); }
+.lfk.feel-bold .lfk-badge-help { color: #ffd08a; }
+.lfk.feel-bold .lfk-title { letter-spacing: 0.02em; }
+.lfk.is-choosing .lfk-foot { display: none; }
