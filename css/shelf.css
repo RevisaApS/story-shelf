@@ -86,10 +86,10 @@
 .sh-card[data-theme='gs'] .sh-card-ages { color: #ffb08a; }
 .sh-card[data-theme='gs']:hover .sh-card-in { border-color: #ffd2b8; box-shadow: var(--shadow-3), 0 0 46px rgba(255, 110, 60, 0.38); }
 
-.sh-foot { position: absolute; left: 0; right: 0; bottom: 18px; text-align: center; font-style: italic; font-size: 18px; color: var(--cream-faint); text-shadow: 0 1px 4px #000;
+.sh-foot { position: absolute; left: 0; right: 0; bottom: 10px; z-index: 3; display: flex; align-items: center; justify-content: center; gap: 22px; text-align: center; font-style: italic; font-size: 18px; color: var(--cream-faint); text-shadow: 0 1px 4px #000;
   opacity: 0; transition: opacity 1s 1.4s; }
 .sh.is-in .sh-foot { opacity: 0.9; }
-.sh.is-leaving .sh-card:not(.is-picked), .sh.is-leaving .sh-head, .sh.is-leaving .sh-top, .sh.is-leaving .sh-foot { opacity: 0; transition-delay: 0s; transition-duration: 400ms; }
+.sh.is-leaving .sh-card:not(.is-picked), .sh.is-leaving .sh-head, .sh.is-leaving .sh-top, .sh.is-leaving .sh-top-left, .sh.is-leaving .sh-foot { opacity: 0; transition-delay: 0s; transition-duration: 400ms; }
 .sh.is-leaving .sh-card.is-picked { transform: translateY(-10px) scale(1.03); transition-delay: 0s; transition-duration: 700ms; }
 
 /* Lanternfall's title screen: its label and the way back to the shelf */
@@ -113,3 +113,28 @@ html[lang='da'] .sa-hc-stat { min-width: 0; padding: 0 6px 0 5px; gap: 4px; }
 html[lang='da'] .sa-hc-stat i { display: none; }
 html[lang='da'] .sa-hc-stat span { min-width: 0; font-size: 13.5px; letter-spacing: -0.015em; white-space: nowrap; }
 html[lang='da'] .sa-hc-stat b { margin-left: 3px; font-size: 15px; }
+
+/* Install as app (top left, the published page only), the parents' link in the foot, and their panel */
+.sh-top-left { position: absolute; top: 26px; left: 30px; z-index: 3; opacity: 0; transition: opacity 800ms var(--ease-out) 600ms; }
+.sh.is-in .sh-top-left { opacity: 1; }
+.sh-install { display: flex; align-items: center; gap: 12px; min-height: calc(var(--touch) + 10px); padding: 0 26px 0 20px; border-radius: var(--r-pill); cursor: pointer;
+  font-family: var(--font-display); font-weight: 700; font-size: 18px; letter-spacing: 0.08em; text-transform: uppercase; color: #1c1206;
+  border: 1px solid rgba(255, 236, 180, 0.7); background: linear-gradient(180deg, #ffe08a, #e9a93a); box-shadow: var(--shadow-1), 0 0 26px rgba(247, 201, 92, 0.35); }
+.sh-install[hidden] { display: none; }
+.sh-install:active { transform: translateY(1px) scale(0.98); }
+.sh-install-ico { width: 22px; height: 22px; background: currentColor; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M11 3h2v9.2l3.3-3.3 1.4 1.4L12 16l-5.7-5.7 1.4-1.4L11 12.2zM5 18h14v3H5z'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M11 3h2v9.2l3.3-3.3 1.4 1.4L12 16l-5.7-5.7 1.4-1.4L11 12.2zM5 18h14v3H5z'/%3E%3C/svg%3E") center / contain no-repeat; }
+.sh-parents { min-height: var(--touch); padding: 0 16px; border: 0; background: transparent; cursor: pointer; font-family: var(--font-body); font-style: normal; font-size: 18px;
+  color: var(--gold-1); text-decoration: underline; text-underline-offset: 4px; text-shadow: 0 1px 4px #000; }
+.sh-panel { position: absolute; inset: 0; z-index: 6; display: grid; place-items: center; padding: 28px; background: rgba(6, 4, 12, 0.72);
+  backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); }
+.sh-panel-card { width: min(760px, 100%); max-height: 100%; display: flex; flex-direction: column; gap: 14px; padding: 30px 36px 26px; border-radius: 22px;
+  background: linear-gradient(180deg, rgba(34, 26, 52, 0.98), rgba(16, 12, 28, 0.98)); border: var(--hair); box-shadow: var(--shadow-1), var(--inner-hi); }
+.sh-panel-title { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 30px; letter-spacing: 0.04em; color: var(--gold-1); }
+.sh-panel-body { overflow-y: auto; font-family: var(--font-body); font-size: 20px; line-height: 1.45; color: #f3e9d2; text-align: left; }
+.sh-panel-body h3 { margin: 16px 0 2px; font-family: var(--font-display); font-size: 17px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold-1); }
+.sh-panel-body p { margin: 0 0 6px; }
+.sh-steps { margin: 12px 0 0; padding-left: 30px; }
+.sh-steps li { margin: 0 0 12px; padding-left: 6px; font-size: 22px; }
+.sh-count { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-top: 18px; padding: 12px 12px 12px 18px; border-radius: 14px; background: rgba(255, 255, 255, 0.06); border: var(--hair); }
+.sh-by { margin-top: 14px !important; font-size: 16px; color: var(--cream-faint); }
+.sh-panel-x { align-self: center; min-width: 180px; }

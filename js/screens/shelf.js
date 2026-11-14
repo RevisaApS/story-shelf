@@ -5,10 +5,50 @@
 import { h, tap, wait } from '../ui/dom.js';
 import { L, tr, getLang } from '../core/i18n.js';
 import { lanternSky } from './title.js';
+import { install } from '../core/install.js';
+import { countingOff, setCounting } from '../core/playlog.js';
 
 const STR = L({
-  en: { kicker: 'Tonight at the table', title: 'Choose a story', play: 'Play', lang: 'Language', foot: 'Every story can be read aloud or listened to.' },
-  da: { kicker: 'I aften ved bordet', title: 'Vælg en historie', play: 'Spil', lang: 'Sprog', foot: 'Alle historier kan læses højt eller lyttes til.' },
+  en: {
+    kicker: 'Tonight at the table', title: 'Choose a story', play: 'Play', lang: 'Language', foot: 'Every story can be read aloud or listened to.',
+    close: 'Close', parents: 'For parents', install: 'Install as app',
+    howTitle: 'Put the game on the home screen',
+    howLead: 'Then it opens full screen from its own icon, like any other app.',
+    how: {
+      android: ['Tap the three dots at the top right of the browser.', 'Choose "Add to Home screen" or "Install app".', 'Open the game from the new icon.'],
+      ios: ['Tap the Share button in Safari (the square with an arrow).', 'Choose "Add to Home Screen".', 'Open the game from the new icon.'],
+      other: ['Open this page on the tablet, in Chrome.', 'Tap "Install as app" there.', 'Open the game from the new icon.'],
+    },
+    noteTitle: 'For parents',
+    note: [
+      [null, 'Lanternfall and Grimspire are two story games a dad made for his own boys. This is an early test version. It is free, with no ads, no purchases and no account.'],
+      ['What we count', 'Which game is opened, battles won and lost, level, how long a visit lasts, and errors in the game. We use it only to make the games better.'],
+      ['What we do not store', 'Names, anything your child types or says, e-mail, or where you are. The tablet gets a random number, so we can see whether the same tablet comes back. The number does not say who is playing.'],
+      ['Where it is kept', 'The numbers are kept in the EU (Ireland) with Supabase. The game itself is fetched from GitHub. Your saved games stay on this tablet only.'],
+    ],
+    countOn: 'Counting is on for this tablet.', countOff: 'Counting is off for this tablet.', turnOff: 'Turn off', turnOn: 'Turn on',
+    by: 'Revisa ApS, Denmark',
+  },
+  da: {
+    kicker: 'I aften ved bordet', title: 'Vælg en historie', play: 'Spil', lang: 'Sprog', foot: 'Alle historier kan læses højt eller lyttes til.',
+    close: 'Luk', parents: 'Til forældre', install: 'Installer som app',
+    howTitle: 'Læg spillet på startskærmen',
+    howLead: 'Så åbner det i fuld skærm fra sit eget ikon, som enhver anden app.',
+    how: {
+      android: ['Tryk på de tre prikker øverst til højre i browseren.', 'Vælg "Føj til startskærm" eller "Installer app".', 'Åbn spillet fra det nye ikon.'],
+      ios: ['Tryk på Del-knappen i Safari (firkanten med en pil).', 'Vælg "Føj til hjemmeskærm".', 'Åbn spillet fra det nye ikon.'],
+      other: ['Åbn denne side på tabletten, i Chrome.', 'Tryk på "Installer som app" dér.', 'Åbn spillet fra det nye ikon.'],
+    },
+    noteTitle: 'Til forældre',
+    note: [
+      [null, 'Lygtefald og Grumspir er to eventyrspil, som en far har lavet til sine egne drenge. Det er en tidlig testudgave. Den er gratis, uden reklamer, uden køb og uden konto.'],
+      ['Det tæller vi', 'Hvilket spil der åbnes, kampe der vindes og tabes, niveau, hvor længe et besøg varer, og fejl i spillet. Vi bruger det kun til at gøre spillene bedre.'],
+      ['Det gemmer vi ikke', 'Navne, noget jeres barn skriver eller siger, e-mail, eller hvor I er. Tabletten får et tilfældigt nummer, så vi kan se, om den samme tablet kommer igen. Nummeret siger ikke, hvem der spiller.'],
+      ['Her ligger det', 'Tallene ligger i EU (Irland) hos Supabase. Selve spillet hentes fra GitHub. Jeres gemte spil ligger kun på denne tablet.'],
+    ],
+    countOn: 'Tælling er slået til på denne tablet.', countOff: 'Tælling er slået fra på denne tablet.', turnOff: 'Slå fra', turnOn: 'Slå til',
+    by: 'Revisa ApS, Danmark',
+  },
 });
 const LANG_NAMES = { da: 'Dansk', en: 'English' };
 
@@ -76,13 +116,75 @@ export async function shelfScreen(ctx, packs = []) {
     return card;
   });
 
+  // ---- a panel over the shelf: the note to parents, or the steps to install
+  let panel = null;
+  let opener = null;
+  // while a panel is open the shelf behind it takes no taps, focus or keys
+  const setBehind = (off) => { for (const el of root.children) if (el !== panel) el.inert = off; };
+  const closePanel = () => {
+    if (!panel) return;
+    panel.remove(); panel = null;
+    setBehind(false);
+    try { opener?.focus?.(); } catch { /* ignore */ }
+    opener = null;
+  };
+  const openPanel = (title, body) => {
+    closePanel();
+    opener = document.activeElement;
+    const x = h('button.sh-panel-x.lf-btn', { type: 'button' }, h('span', STR.close));
+    panel = h('div.sh-panel', { role: 'dialog', 'aria-modal': 'true', 'aria-label': title },
+      h('div.sh-panel-card', h('h2.sh-panel-title', title), h('div.sh-panel-body', body), x));
+    panel.addEventListener('pointerdown', (e) => { if (e.target === panel) closePanel(); });
+    tap(x, closePanel, ctx);
+    root.appendChild(panel);
+    setBehind(true);
+    x.focus();
+  };
+
+  // ---- install as app (the published page only; hidden once it runs as an app)
+  const steps = (list) => h('ol.sh-steps', list.map((t) => h('li', t)));
+  const installBtn = h('button.sh-install', { type: 'button' }, h('span.sh-install-ico', { 'aria-hidden': 'true' }), h('span', STR.install));
+  const showInstall = () => { installBtn.hidden = !install.offered(); };
+  tap(installBtn, async () => {
+    if (done) return;
+    if (install.ready()) {
+      const outcome = await install.prompt();
+      ctx.playlog?.log('install', { outcome });
+      if (outcome !== 'none') { showInstall(); return; }
+    }
+    ctx.playlog?.log('install', { outcome: 'steps', platform: install.platform() });
+    openPanel(STR.howTitle, [h('p', STR.howLead), steps(STR.how[install.platform()] || STR.how.other)]);
+  }, ctx, { sfx: 'ui.confirm' });
+  const stopInstallWatch = install.onChange(() => { showInstall(); if (install.installed()) ctx.playlog?.log('install', { outcome: 'installed' }); });
+  showInstall();
+
+  // ---- the note to parents, with the switch for counting (shown where the page can count at all)
+  const parentsBtn = h('button.sh-parents', { type: 'button' }, STR.parents);
+  const noteBody = () => {
+    const parts = STR.note.map(([head, text]) => [head ? h('h3', head) : null, h('p', text)]);
+    if (!ctx.playlog?.can) return [parts, h('p.sh-by', STR.by)];
+    const state = h('span');
+    const sw = h('button.sh-switch.lf-btn', { type: 'button' }, h('span'));
+    const paint = () => { const off = countingOff(); state.textContent = off ? STR.countOff : STR.countOn; sw.firstChild.textContent = off ? STR.turnOn : STR.turnOff; };
+    tap(sw, () => {
+      const off = !countingOff();
+      setCounting(!off);
+      if (off) ctx.playlog?.stop?.(); // right away; turning it on again counts from the next visit
+      paint();
+    }, ctx);
+    paint();
+    return [parts, h('div.sh-count', state, sw), h('p.sh-by', STR.by)];
+  };
+  tap(parentsBtn, () => { if (!done) openPanel(STR.noteTitle, noteBody()); }, ctx);
+
   const canvas = h('canvas.sh-sky');
   const root = h('div.sh', { class: `n-${packs.length}` },
     h('div.sh-shade'), canvas, h('div.sh-vignette'),
+    h('div.sh-top-left', installBtn),
     h('div.sh-top', langSwitch),
     h('div.sh-head', h('div.lf-kicker', STR.kicker), h('h1.sh-title', STR.title), h('div.lf-divider')),
     h('div.sh-cards', cards),
-    h('div.sh-foot', STR.foot),
+    h('div.sh-foot', h('span', STR.foot), parentsBtn),
     h('div.sh-black'));
   layer.appendChild(root);
 
@@ -98,7 +200,8 @@ export async function shelfScreen(ctx, packs = []) {
   ctx.audio.music('title');
 
   const onKey = (e) => {
-    if (done || ctx.stage.layers.overlay.childElementCount) return;
+    if (e.key === 'Escape' && panel) { closePanel(); return; }
+    if (done || panel || ctx.stage.layers.overlay.childElementCount) return;
     if (e.target?.closest?.('button')) return; // a focused card or switch handles its own Enter
     if (e.key === 'Enter' && cards.length === 1) { unlock(); pick(packs[0].id); }
     const n = parseInt(e.key, 10);
@@ -113,6 +216,8 @@ export async function shelfScreen(ctx, packs = []) {
 
   const id = await picked;
   window.removeEventListener('keydown', onKey);
+  stopInstallWatch();
+  closePanel();
   ctx.audio.sfx('sting.wonder', { volume: 0.7 });
   root.classList.add('is-leaving');
   await ctx.sleep(900);

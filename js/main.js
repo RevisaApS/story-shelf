@@ -25,6 +25,7 @@ import { createNarrator } from './gm/narrator.js';
 import { L, tr, LANGS, setLang, getLang, detectLang, localize, walkText } from './core/i18n.js';
 import PACKS from './packs.js';
 import { createPlaylog } from './core/playlog.js';
+import './core/install.js'; // listens for the browser's install offer from the first moment
 
 const VERSION = '0.1.0';
 const params = new URLSearchParams(location.search);

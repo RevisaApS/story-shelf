@@ -9,7 +9,8 @@
 // two visits from one tablet can be told from two tablets; it says nothing about who is playing.
 //
 // On only when the page carries window.LF_SYNC = { url, key } (publish.py writes it into the published
-// page). Off for robot runs (&auto=1, &fast=1) and with ?nolog=1. Rows from localhost, or with &test=1,
+// page). Off for robot runs (&auto=1, &fast=1), with ?nolog=1, and when a parent has turned counting
+// off on the shelf (countingOff, kept in this browser). Rows from localhost, or with &test=1,
 // are marked test = true. Events are batched and sent at most every 3 s; a batch that fails is sent
 // again with the next one, and whatever is left when the page closes is sent with keepalive.
 // A watchdog logs a 'stall' when the game has done nothing for 30 s (no event, nothing new on screen)
@@ -58,13 +59,17 @@ export function slim(v, depth = 0) {
   return undefined;
 }
 
+// The parents' switch on the shelf ("Til forældre"): counting off for this browser until it is turned on again.
+export function countingOff() { try { return localStorage.getItem('lf.nolog') === '1'; } catch { return false; } }
+export function setCounting(on) { try { if (on) localStorage.removeItem('lf.nolog'); else localStorage.setItem('lf.nolog', '1'); } catch { /* ignore */ } }
+
 export function createPlaylog(ctx) {
   const P = ctx.params || {};
   const cfg = (typeof window !== 'undefined' && window.LF_SYNC) || null;
   const okCfg = !!(cfg && /^https:\/\/[a-z0-9]+\.supabase\.co$/.test(cfg.url || '') && /^sb_publishable_[A-Za-z0-9_-]+$/.test(cfg.key || ''));
   const q = new URLSearchParams(location.search);
-  const off = !okCfg || !!(P.auto || P.fast) || q.get('nolog') === '1' || typeof fetch !== 'function';
-  const none = { log() {}, flush() {}, on: false };
+  const off = !okCfg || !!(P.auto || P.fast) || q.get('nolog') === '1' || countingOff() || typeof fetch !== 'function';
+  const none = { log() {}, flush() {}, stop() {}, on: false, can: okCfg };
   if (off) return none;
 
   const test = q.get('test') === '1' || /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
@@ -213,5 +218,7 @@ export function createPlaylog(ctx) {
   window.addEventListener('pagehide', closing);
   document.addEventListener('visibilitychange', () => { if (document.hidden) closing(); });
 
-  return { log, flush, on: true };
+  // stop(): nothing more is sent from this visit, and what was waiting is thrown away
+  const api = { log, flush, on: true, can: true, stop() { dead = true; queue = []; pending = null; clearTimeout(timer); api.on = false; } };
+  return api;
 }
