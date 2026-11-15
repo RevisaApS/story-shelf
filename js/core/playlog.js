@@ -1,12 +1,18 @@
 // Play log: what happened during a real play, sent to the Supabase table public.shelf_events
-// (schema and rules: lanternfall/supabase/001_shelf_events.sql). The page can only add rows.
+// (schema and rules: lanternfall/supabase/001_shelf_events.sql and 002_player.sql). The page can only add rows.
 //
 //   createPlaylog(ctx) -> { log(kind, data), flush(), on }   ctx.playlog
-//   one row: { id, device, session, game, lang, kind, happened_at, ms (since page load), game_version, test, data }
+//   one row: { id, device, session, game, lang, kind, happened_at, ms (since page load), game_version, test, player, data }
 //
-// What is never sent: hunter or player names, spoken or typed text, anything from the save file but
-// level, difficulty, hero types and place. `device` is a random id kept in this browser's storage, so
-// two visits from one tablet can be told from two tablets; it says nothing about who is playing.
+// Who is playing: `player` is the name typed on the shelf under "Hvem spiller?" (often a first name, kept in
+// this browser with the last few names so brothers can switch with one tap), or null when none was given.
+// It is read for every row, so a change mid-visit counts from the next row on; a change logs one 'player'
+// row. cleanName() keeps it within the table's rule (1 to 40 characters, or null), so a name can never make
+// a batch fail. The name travels only in `player`, never inside `data`.
+//
+// What is never sent: hunter names, spoken or typed text other than the player's name, anything from the
+// save file but level, difficulty, hero types and place. `device` is a random id kept in this browser's
+// storage, so two visits from one tablet can be told from two tablets.
 //
 // On only when the page carries window.LF_SYNC = { url, key } (publish.py writes it into the published
 // page). Off for robot runs (&auto=1, &fast=1), with ?nolog=1, and when a parent has turned counting
@@ -62,6 +68,64 @@ export function slim(v, depth = 0) {
 // The parents' switch on the shelf ("Til forældre"): counting off for this browser until it is turned on again.
 export function countingOff() { try { return localStorage.getItem('lf.nolog') === '1'; } catch { return false; } }
 export function setCounting(on) { try { if (on) localStorage.removeItem('lf.nolog'); else localStorage.setItem('lf.nolog', '1'); } catch { /* ignore */ } }
+
+// ---- who is playing (the shelf's "Hvem spiller?"), kept in this browser only
+const PLAYER_KEY = 'lf.player';
+const PLAYERS_KEY = 'lf.players';
+const ASKED_KEY = 'lf.playerAsked';
+const MAX_NAME = 40;     // the table's check: 1 to 40 characters
+const MAX_PLAYERS = 4;   // names remembered as tap-to-pick buttons
+
+// A name the table always accepts, or '' for none: no control or invisible format characters, no broken
+// emoji halves, one space between words, at most 40 characters (counted as Postgres counts them).
+export function cleanName(v) {
+  let s = typeof v === 'string' ? v : (v == null ? '' : String(v));
+  try { s = s.normalize('NFC'); } catch { /* keep as is */ }
+  s = s.replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '')
+    .replace(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/gu, ' ')
+    .replace(/\s+/g, ' ').trim();
+  return Array.from(s).slice(0, MAX_NAME).join('').trim();
+}
+// This visit's answer, kept in memory too, so a tablet whose storage refuses writes (full, blocked) still
+// gets past the question and still sends the name it was given. null: nothing set in this visit.
+let memPlayer = null;
+let memAsked = false;
+export function getPlayer() {
+  if (memPlayer !== null) return memPlayer;
+  try { return cleanName(localStorage.getItem(PLAYER_KEY)); } catch { return ''; }
+}
+// The remembered names, most recently used first.
+export function knownPlayers() {
+  try {
+    const list = JSON.parse(localStorage.getItem(PLAYERS_KEY) || '[]');
+    if (!Array.isArray(list)) return [];
+    const out = [];
+    for (const x of list) { const n = cleanName(x); if (n && !out.some((o) => o.toLowerCase() === n.toLowerCase())) out.push(n); }
+    return out.slice(0, MAX_PLAYERS);
+  } catch { return []; }
+}
+// Has this tablet been asked yet (a name given or the question skipped)?
+export function playerAsked() {
+  if (memAsked) return true;
+  try { return localStorage.getItem(ASKED_KEY) === '1' || !!localStorage.getItem(PLAYER_KEY); } catch { return true; }
+}
+export function markPlayerAsked() { memAsked = true; try { localStorage.setItem(ASKED_KEY, '1'); } catch { /* ignore */ } }
+// Set the current name ('' for nobody). The remembered names are kept most recent first, so the one dropped when
+// a fifth arrives is the one used longest ago (the shelf shows them in a fixed A to Z order). Returns the clean name.
+export function setPlayer(v) {
+  const n = cleanName(v);
+  memPlayer = n;
+  memAsked = true;
+  try {
+    if (n) localStorage.setItem(PLAYER_KEY, n); else localStorage.removeItem(PLAYER_KEY);
+    if (n) {
+      const list = [n, ...knownPlayers().filter((o) => o.toLowerCase() !== n.toLowerCase())].slice(0, MAX_PLAYERS);
+      localStorage.setItem(PLAYERS_KEY, JSON.stringify(list));
+    }
+  } catch { /* storage refused: this visit still has the name in memory */ }
+  try { localStorage.setItem(ASKED_KEY, '1'); } catch { /* ignore */ }
+  return n;
+}
 
 export function createPlaylog(ctx) {
   const P = ctx.params || {};
@@ -154,7 +218,7 @@ export function createPlaylog(ctx) {
     queue.push({
       id: uuid(), device, session, game: ctx.pack?.id || null, lang: ctx.lang || null,
       kind: String(kind).slice(0, 40), happened_at: new Date().toISOString(), ms: Math.round(performance.now()),
-      game_version: ctx.version || null, test, data: clean,
+      game_version: ctx.version || null, test, player: getPlayer() || null, data: clean,
     });
     if (queue.length > MAX_QUEUE) queue = queue.slice(-MAX_QUEUE);
     if (kind !== 'stall' && kind !== 'tick' && kind !== 'close' && kind !== 'error') last = { kind, what: clean.id || clean.encId || clean.screen || null };
